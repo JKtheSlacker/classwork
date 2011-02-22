@@ -1,0 +1,101 @@
+/* marcus.java
+ * Written by Joshua Wood
+ * 1/31/11 */
+import java.io.*;
+import java.lang.*;
+
+public class marcus
+{
+
+  public static void main (String[]args) throws IOException
+  {
+    int numcols = 0;
+    int numrows = 0;
+    int numtestcases = 0;
+    char[] patharray = new char[0];
+
+    BufferedReader in = new BufferedReader (new FileReader ("marcus.in"));
+    String str;
+    if ((str = in.readLine ()) != null)
+      {				// First line is always test cases
+	numtestcases = Integer.parseInt (str.trim ());
+      }
+    for (int k = 0; k < numtestcases; k++)
+      { // This loop handles all our testcases in order
+	str = in.readLine();
+	String[]line = str.split ("\\s");
+	numrows = Integer.parseInt (line[0]);
+	numcols = Integer.parseInt (line[1]); // Initial setup for the maze
+
+	// This populates our array
+	patharray = new char[numrows * numcols];
+	for (int i = 0; i < numrows * numcols; i = i + numcols)
+	  {
+	    str = in.readLine();
+	    for (int j = 0; j < numcols; j++)
+	      {
+		patharray[i + j] = str.charAt (j);
+	      }
+	  }
+	findpath (patharray, numcols); // The findpath function not only finds the path, but prints it
+      }
+    in.close(); // It's polite to close files when you're done with them.
+  }
+
+  public static void findpath (char[]patharray, int numcols)
+  {				// This does the magic
+    String nameofgod = "IEHOVA#";
+    int currentlocation = 0;
+
+    // Find the starting location
+    for (int i = 0; i < patharray.length; i++)
+      {
+	if (patharray[i] == '@')
+	  {
+	    currentlocation = i;
+	  }
+      }
+
+    for (int j = 0; j < nameofgod.length (); j++)
+      {
+	if (lookleft(currenlocation) && patharray[currentlocation - 1] == nameofgod.charAt (j))
+	  {
+	    System.out.print ("left ");
+	    currentlocation = currentlocation - 1;
+	  }
+	else if (lookright(currentlocation, patharray.length) && patharray[currentlocation + 1] == nameofgod.charAt (j))
+	  {
+	    System.out.print ("right ");
+	    currentlocation = currentlocation + 1;
+	  }
+	else
+	  {			// going forward is the only other possibility
+	    System.out.print ("forth ");
+	    currentlocation = currentlocation - numcols;
+	  }
+      }
+
+    System.out.println ();	// This inserts a newline
+  }
+
+  public static boolean lookleft (int currentlocation){
+	  // Checks whether we can safely look to the left
+	  // Avoids ArrayIndexOutOfBounds errors
+	  if ( currentlocation == 0){
+		  return false;
+	  } else {
+		  return true;
+	  }
+  }
+
+  public static boolean lookright (int currentlocation, int pathlength) {
+	  // Checks whether we can safely look to the right
+	  // Avoids ArrayIndexOutOfBounds errors
+	  if ( currentlocation == pathlength){
+		  return false;
+	  } else {
+		  return true;
+	  }
+  }
+
+}
