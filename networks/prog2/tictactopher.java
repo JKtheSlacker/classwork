@@ -1,3 +1,7 @@
+/* Networks Program 2 - Server
+ * Written by Joshua Wood
+ * March 2011 */
+
 import java.io.*;
 import java.net.*;
 
@@ -14,43 +18,51 @@ class tictactopher {
 			Socket connectionSocket = welcomeSocket.accept();
 			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
 			DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-			outToClient.writeBytes("BOG\n");
+			outToClient.writeBytes("BOG\n"); // The client outer loop "eats" this
 			outToClient.writeBytes(welcomeString);
 			outToClient.writeBytes(welcomeString2);
 
 			gameBoard = makeBoard();
 			while (isWon(gameBoard) == 'N'){
-				outToClient.writeBytes("\n");
+				outToClient.writeBytes("\n"); // The client inner loop "eats" this
 				printBoard(gameBoard, outToClient);
 				outToClient.writeBytes(chooseMove);
-				outToClient.writeBytes("EOF\n");
+				outToClient.writeBytes("EOF\n"); // The client inner loop "eats" this
 				clientResponse = inFromClient.readLine();
+				// We don't want to allow a bad move
 				if (!checkMove(gameBoard, Integer.parseInt(clientResponse))){
+					outToClient.writeBytes("\n");
 					outToClient.writeBytes("PLEASE CHOOSE ANOTHER MOVE.\n");
 				} else {
+					// Player move
 					makeMove(gameBoard, Integer.parseInt(clientResponse));
+					// Computer move
 					chooseMove(gameBoard, 'X');
 				}
 			}
 			printBoard(gameBoard, outToClient);
+			// The player is always O
 			if (isWon(gameBoard) == 'O'){
 				outToClient.writeBytes("WELL DONE PROFESSOR.\n");
 				outToClient.writeBytes("PERHAPS WE SHALL PLAY AGAIN SOMETIME.\n");
+			// Therefore, the computer is always X
 			} else if (isWon(gameBoard) == 'X'){
 				outToClient.writeBytes("PEOPLE SOMETIMES MAKE MISTAKES.\n");
 				outToClient.writeBytes("PERHAPS NEXT TIME YOU WILL DO BETTER.\n");
+			// The computer plays to not lose, so we should see this all the time.
 			} else if (isWon(gameBoard) == 'C'){
 				outToClient.writeBytes("A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.\n");
 				outToClient.writeBytes("I BELIEVE THEY CALL THIS \"CAT\".\n");
 			}
 			outToClient.writeBytes("GOODBYE.\n");
 			outToClient.writeBytes("PRESS ENTER TO EXIT.\n");
-			outToClient.writeBytes("EOF\n");
-			outToClient.writeBytes("EOG\n");
+			outToClient.writeBytes("EOF\n"); // Eaten by the inner loop
+			outToClient.writeBytes("EOG\n"); // Eaten by the outer loop
 		}
 	}
 
 	public static char[] makeBoard(){
+		// This method creates the gameboard itself.
 		char [] gameBoard = new char [25];
 		gameBoard[0] = '1';
 		gameBoard[2] = '2';
@@ -61,11 +73,13 @@ class tictactopher {
 		gameBoard[20] = '7';
 		gameBoard[22] = '8';
 		gameBoard[24] = '9';
+		// Generate the vertical lines
 		for (int i = 0; i < 3; i++){
 			for (int j = 1; j < 4; j+=2){
 				gameBoard[i*10 + j] = '|';
 			}	
 		}
+		// Generate the horizontal lines
 		for (int i = 1; i < 5; i+=2){
 			for (int j = 0; j < 5; j++){
 				gameBoard[i*5 + j] = '-';
@@ -75,6 +89,7 @@ class tictactopher {
 	}
 
 	public static void printBoard(char[] gameBoard, DataOutputStream outToClient) throws Exception {
+		// Prints the board in its current state
 		for (int i = 0; i < 5; i++){
 			for (int j = 0; j < 5; j++){
 				outToClient.writeChar(gameBoard[i*5 + j]);
@@ -84,11 +99,13 @@ class tictactopher {
 	}
 
 	public static char [] makeMove(char[] gameBoard, int position){
+		// This makes the move the player selects
 		gameBoard[realPosition(position)] = 'O';
 		return gameBoard;
 	}
 
 	public static boolean checkMove(char[] gameBoard, int position){
+		// We don't want to make an invalid move
 		boolean validMove = false;
 		for (int i = 1; i < 10; i++){
 			if (position == i){
@@ -107,6 +124,8 @@ class tictactopher {
 	}
 
 	public static int realPosition(int position){
+		// The move selected by the player is not
+		// the actual array position - a mapping function.
 		int realPosition = -1;
 		switch (position){
 			case 1: realPosition = 0; break;
@@ -123,13 +142,16 @@ class tictactopher {
 	}
 
 	public static char [] chooseMove(char[] gameBoard, char side){
+		// The move choosing algorithm for the computer
 		char otherSide;
+		// The computer is always X, but this allows for the other way
 		if (side == 'X'){
 			otherSide = 'O';
 		} else {
 			otherSide = 'X';
 		}
 		if (isWon(gameBoard) == 'N'){
+			// Priority list of possible moves
 			if (winOrBlock(gameBoard, side) != -1){
 				gameBoard[winOrBlock(gameBoard, side)] = side;
 			} else if (winOrBlock(gameBoard, otherSide) != -1){
@@ -151,6 +173,7 @@ class tictactopher {
 	}
 
 	public static int winOrBlock(char[] gameBoard, char side){
+		// First priority - win the game, or stop the player from winning
 		boolean[] gb = truthTable(gameBoard, side);
 
 		if (((gb[1] && gb[2]) || (gb[3] && gb[6]) || (gb[4] && gb[8])) && checkMove(gameBoard, 1)){
@@ -197,6 +220,8 @@ class tictactopher {
 	}
 
 	public static boolean center(char[] gameBoard){
+		// Second priority - play in the center of the board,
+		// allowing the most possible moves.
 		if (checkMove(gameBoard, 5)){
 			return true;
 		} else
@@ -204,6 +229,7 @@ class tictactopher {
 	}
 
 	public static int oppositeCorner(char[] gameBoard, char side){
+		// Third priority - play in the opposite corner from the player
 		char otherSide;
 		if (side == 'X'){
 			otherSide = 'O';
@@ -222,6 +248,7 @@ class tictactopher {
 	}
 
 	public static int emptyCorner(char[] gameBoard){
+		// Fourth priority - just play in any empty corner.
 		if (checkMove(gameBoard, 1)){
 			return realPosition(1);
 		} else if (checkMove(gameBoard, 3)){
@@ -235,6 +262,7 @@ class tictactopher {
 	}
 
 	public static int emptySide(char[] gameBoard){
+		// All we have left is an empty side square.
 		if (checkMove(gameBoard, 2)){
 			return 2;
 		} else if (checkMove(gameBoard, 4)){
@@ -247,6 +275,7 @@ class tictactopher {
 	}
 
 	public static char isWon(char[] gameBoard){
+		// Checks if the game has been won, of course
 		boolean [] sideX = truthTable(gameBoard, 'X');
 		boolean [] sideO = truthTable(gameBoard, 'O');
 		boolean [] totalPlacements = new boolean [9];
@@ -288,6 +317,8 @@ class tictactopher {
 	}
 
 	public static boolean[] truthTable(char[] gameBoard, char side){
+		// Shows whether the given side controls
+		// certain positions.
 		boolean [] gb = new boolean [9];
 		for (int i = 0; i < 9; i++){
 			gb[i] = false;
