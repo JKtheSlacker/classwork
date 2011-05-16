@@ -27,7 +27,6 @@ class chatclient extends Thread
 
 		new Thread (new chatclient()).start();
 		
-
 		while (stillChatting) {
 			userInput = inFromUser.readLine();
 			if (userInput.endsWith("EOF")){
@@ -35,6 +34,9 @@ class chatclient extends Thread
 			}
 			outToServer.writeBytes(userInput + "\n");
 		}
+		inFromUser.close ();
+		inFromServer.close ();
+		outToServer.close ();
 		clientSocket.close ();
 	}
 
