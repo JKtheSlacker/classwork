@@ -4,45 +4,70 @@
 import java.io.*;
 import java.net.*;
 
-class chatclient extends Thread
-{
-
+class chatclient {
 	static Socket clientSocket;
-	static DataOutputStream outToServer;
-	static BufferedReader inFromUser;
-	static BufferedReader inFromServer;
-	static String serverResponse;
-	static String userInput;
-	static boolean stillChatting = true;
 
 	public static void main (String argv[]) throws Exception 
 	{
 		// Set up the connection
 		clientSocket = new Socket ("localhost", 42134);
-		outToServer = new DataOutputStream (clientSocket.getOutputStream ());
-		inFromUser = new BufferedReader(new InputStreamReader(System.in));
-		inFromServer = new BufferedReader (new 
-				InputStreamReader (clientSocket.getInputStream ()));
 		System.out.println("To exit chat at any time, type EOF and press enter.");
 
-		new Thread (new chatclient()).start();
-		
-		while (stillChatting) {
-			userInput = inFromUser.readLine();
-			if (userInput.endsWith("EOF")){
-				stillChatting = false;
+		keyboardListener keyboard = new keyboardListener(clientSocket);
+		serverListener server = new serverListener(clientSocket);
+		keyboard.start();
+		server.start();
+		keyboard.join();
+		server.join();
+
+		clientSocket.close();
+	}
+}
+
+// Not exactly Ray Charles
+class keyboardListener extends Thread {
+	String userInput;
+	BufferedReader inFromUser;
+	DataOutputStream outToServer;
+	Socket clientSocket;
+	boolean stillChatting = true;
+
+	public keyboardListener (Socket clientSocket){
+		this.clientSocket = clientSocket;
+	}
+
+	public synchronized void run() {
+		try {
+			outToServer = new DataOutputStream(clientSocket.getOutputStream());
+			inFromUser = new BufferedReader(new InputStreamReader(System.in));
+			while (stillChatting) {
+				userInput = inFromUser.readLine();
+				if (userInput.endsWith("EOF")) {
+					stillChatting = false;
+				}
+				outToServer.writeBytes(userInput + "\n");
 			}
-			outToServer.writeBytes(userInput + "\n");
+			clientSocket.close();
+		} catch (Exception e) {
 		}
-		inFromUser.close ();
-		inFromServer.close ();
-		outToServer.close ();
-		clientSocket.close ();
+	}
+}
+
+// Not the server whisperer, lest ye be confused.
+class serverListener extends Thread {
+	String serverResponse;
+	BufferedReader inFromServer;
+	boolean stillChatting = true;
+	Socket clientSocket;
+
+	public serverListener (Socket clientSocket){
+		this.clientSocket = clientSocket;
 	}
 
 	// Handles reading from the server 
 	public synchronized void run() {
 		try {
+			inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			while (stillChatting){
 				serverResponse = inFromServer.readLine();
 				if(serverResponse.endsWith("EOF")){
@@ -51,9 +76,9 @@ class chatclient extends Thread
 					System.out.println(serverResponse);
 				}
 			}
+			clientSocket.close();
 		} catch (Exception e){
 			System.err.println(e);
 		}
 	}
-
 }
