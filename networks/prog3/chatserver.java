@@ -30,14 +30,24 @@ class chatserver {
 		// I'd write this to both, but it would mess up my chat client.
 		outToClient1.writeBytes("Welcome to the Stop and Go Chat Server.\n");
 
-		while (true){
+		boolean stillChatting = true;
+
+		while (stillChatting){
 			fromClient = inFromUser1.readLine();
 			outToClient2.writeBytes("Client 1: " + fromClient + "\n");
 
-			fromClient = inFromUser2.readLine();
-			outToClient1.writeBytes("Client 2: " + fromClient + "\n");
+			if (fromClient.equals("EOF")) {
+				stillChatting = false;
+			} else {
+				fromClient = inFromUser2.readLine();
+				outToClient1.writeBytes("Client 2: " + fromClient + "\n");
+				if (fromClient.equals("EOF")){
+					stillChatting = false;
+				}
+			}
+
 		}
-//		welcomeSocket.close(); Don't need this, since the server just kind of dies if it loses all its clients.
+		welcomeSocket.close();
 	}
 
 }

@@ -20,13 +20,23 @@ class chatclient
 
 		BufferedReader inFromServer = new BufferedReader (new 
 				InputStreamReader (clientSocket.getInputStream ()));
-	
-		while (true) {
-			System.out.println(inFromServer.readLine());
-			userInput = inFromUser.readLine();
-			outToServer.writeBytes (userInput + "\n");
+
+		System.out.println("To exit chat at any time, type EOF and press enter.");
+		boolean stillChatting = true;
+		while (stillChatting) {
+			serverResponse = inFromServer.readLine();
+			if (serverResponse.endsWith("EOF")){
+				stillChatting = false;
+			} else {
+				System.out.println(serverResponse);
+				userInput = inFromUser.readLine();
+				outToServer.writeBytes (userInput + "\n");
+				if (userInput.equals("EOF")){
+					stillChatting = false;
+				}
+			}
 		}
-   
-//    clientSocket.close (); This really doesn't matter without a way to force the client to die.
+		System.out.println("Thank you for using the Stop and Wait Chat Server.");
+   	    clientSocket.close ();
   }
 }
