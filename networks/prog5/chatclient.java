@@ -35,7 +35,6 @@ class chatclient {
 // Not exactly Ray Charles
 class keyboardListener extends Thread {
 	String userInput;
-	String userName;
 	BufferedReader inFromUser;
 	DataOutputStream outToServer;
 	Socket clientSocket;
@@ -43,14 +42,12 @@ class keyboardListener extends Thread {
 
 	public keyboardListener (Socket clientSocket, DataOutputStream outToServer, BufferedReader inFromUser){
 		this.clientSocket = clientSocket;
-		this.userName = userName;
 		this.outToServer = outToServer;
 		this.inFromUser = inFromUser;
 	}
 
 	public synchronized void run() {
 		try {
-			outToServer.writeBytes(userName + "\n");
 			while (stillChatting) {
 				userInput = inFromUser.readLine();
 				if (userInput.endsWith("EOF")) {
