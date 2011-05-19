@@ -49,20 +49,26 @@ class clientThread extends Thread {
 	// Awesome constructor, now with 130% more explosions.
 	// This is the Michael Bay film of constructors.
 	public clientThread (Socket clientSocket, LinkedList<clientThread> clientList){
-		this.clientSocket = clientSocket;
-		this.clientList = clientList;
-		outToClient = new DataOutputStream(clientSocket.getOutputStream());
-		inFromUser = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		try {
+			this.clientSocket = clientSocket;
+			this.clientList = clientList;
+			outToClient = new DataOutputStream(clientSocket.getOutputStream());
+			inFromUser = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		} catch (Exception e) {
+		}
 	}
 
 	// I do this often enough that it merits its own method.
 	public void writeToClients(String message){
-		Iterator<clientThread> iter = clientList.iterator();
-		while (iter.hasNext()){
-			clientThread next = iter.next();
-			if (next != this){
-				next.outToClient.writeBytes(username + ": " + message);
+		try {
+			Iterator<clientThread> iter = clientList.iterator();
+			while (iter.hasNext()){
+				clientThread next = iter.next();
+				if (next != this){
+					next.outToClient.writeBytes(userName + ": " + message);
+				}
 			}
+		} catch (Exception e) {
 		}
 	}
 
