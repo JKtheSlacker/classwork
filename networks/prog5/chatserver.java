@@ -7,34 +7,41 @@ import java.net.*;
 import java.util.*;
 import java.io.*;
 
-class chatserver {
+class chatserver extends Thread {
+	static ServerSocket welcomeSocket;
+	static LinkedList<clientThread> clientList;
+	static boolean stillChatting = true;
+	static boolean notFirstRun = false;
+
 	public static void main(String[] args) throws Exception {
-		ServerSocket welcomeSocket;
-		PrintStream debug = System.out;
+		chatserver server = new chatserver();
+		server.start();
+		server.join();
+	}
 
-		// Establish the listener socket
+	public chatserver() throws Exception {
 		welcomeSocket = new ServerSocket(42134);
-		
-		LinkedList<clientThread> clientList = new LinkedList<clientThread>();
+		clientList = new LinkedList<clientThread>();
+	}
 
-		// This is not entirely true, but it's more true than 
-		// boolean haveClients = true.
-		boolean stillChatting = true;
-
-		while (stillChatting){
-			Socket clientSocket = welcomeSocket.accept();
-			clientThread client = new clientThread(clientSocket, clientList);
-			client.start();
-			clientList.add(client);
-			debug.println("Number of clients: " + clientList.size());
-			if (clientList.size() == 0){
-				System.out.println("Ran out of clients.");
-				System.out.println("Shutting down server.");
-				stillChatting = false;
+	public synchronized void run() {
+		try {
+			while (stillChatting){
+				if (clientList.size() == 0 && notFirstRun){
+					System.out.println("Ran out of clients.");
+					System.out.println("Shutting down server.");
+					stillChatting = false;
+				}
+				Socket clientSocket = welcomeSocket.accept();
+				clientThread client = new clientThread(clientSocket, clientList);
+				client.start();
+				clientList.add(client);
+				notFirstRun = true;
 			}
+			welcomeSocket.close();
+		} catch (Exception e) {
 		}
-		welcomeSocket.close();
-	}		
+	}
 }
 
 // May as well give every client its own thread.
@@ -88,6 +95,7 @@ class clientThread extends Thread {
 						writeToClients(" has disconnected.");
 						System.out.println(userName + " has disconnected.");
 						clientList.remove(this);
+						System.out.println(clientList.size());
 					} else {
 						writeToClients(fromClient);								
 						System.out.println( userName + ": " + fromClient);
