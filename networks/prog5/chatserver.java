@@ -55,39 +55,36 @@ class clientThread extends Thread {
 		inFromUser = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 	}
 
+	// I do this often enough that it merits its own method.
+	public void writeToClients(String message){
+		Iterator<clientThread> iter = clientList.iterator();
+		while (iter.hasNext()){
+			clientThread next = iter.next();
+			if (next != this){
+				next.outToClient.writeBytes(username + ": " + message);
+			}
+		}
+	}
+
 	public synchronized void run() {
 		String fromClient;
 		try {
 			outToClient.writeBytes("Welcome to the multithreaded chat room.\n");
 			userName = inFromUser.readLine();
 			System.out.println(userName + " has connected.");
-			Iterator<clientThread> iter = clientList.iterator();
-			while (iter.hasNext()){
-				iter.next().outToClient.writeBytes(userName + " has connected.\n");
-			}
+			writeToClients(" has connected");
 			while (stillChatting) {
 				fromClient = inFromUser.readLine();
 				if (fromClient != null) {
 					if (fromClient.endsWith("EOF")){
 						stillChatting = false;
-						// Notify the other clients and delist this one.
-						iter = clientList.iterator();
-						while (iter.hasNext()){
-							if (iter.next() != this){
-								iter.next().outToClient.writeBytes(userName + " has disconnected.\n");
-								System.out.println(userName + " has disconnected.");
-							} else {
-								clientList.remove(iter.next());
-							}
-						}
+						// Notify the other clients of disconnection.
+						writeToClients(" has disconnected.");
+						System.out.println(userName + " has disconnected.");
+						clientList.remove(this);
 					} else {
-						iter = clientList.iterator();
-						while (iter.hasNext()){
-							if (iter.next() != this){
-								iter.next().outToClient.writeBytes(userName + ": " + fromClient +  "\n");
-								System.out.println( userName + ": " + fromClient);
-							}
-						}
+						writeToClients(fromClient);								
+						System.out.println( userName + ": " + fromClient);
 					}
 				}
 			}
