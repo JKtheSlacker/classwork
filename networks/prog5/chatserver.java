@@ -11,7 +11,7 @@ class chatserver extends Thread {
 	static ServerSocket welcomeSocket;
 	static LinkedList<clientThread> clientList;
 	static boolean stillChatting = true;
-	static boolean notFirstRun = false;
+	static boolean haveHadClients = false;
 
 	public static void main(String[] args) throws Exception {
 		chatserver server = new chatserver();
@@ -21,22 +21,24 @@ class chatserver extends Thread {
 
 	public chatserver() throws Exception {
 		welcomeSocket = new ServerSocket(42134);
+		welcomeSocket.setSoTimeout(1000);
 		clientList = new LinkedList<clientThread>();
 	}
 
 	public synchronized void run() {
 		try {
 			while (stillChatting){
-				if (clientList.size() == 0 && notFirstRun){
-					System.out.println("Ran out of clients.");
-					System.out.println("Shutting down server.");
+				if (clientList.size() == 0 && !haveHadClients){
+					System.err.println("Ran out of clients.");
+					System.err.println("Shutting down server.");
 					stillChatting = false;
 				}
-				Socket clientSocket = welcomeSocket.accept();
-				clientThread client = new clientThread(clientSocket, clientList);
-				client.start();
-				clientList.add(client);
-				notFirstRun = true;
+				if ((Socket clientSocket = welcomeSocket.accept()) != null) {
+					clientThread client = new clientThread(clientSocket, clientList);
+					client.start();
+					clientList.add(client);
+					haveHadClients = true;
+				}
 			}
 			welcomeSocket.close();
 		} catch (Exception e) {
@@ -71,8 +73,12 @@ class clientThread extends Thread {
 			Iterator<clientThread> iter = clientList.iterator();
 			while (iter.hasNext()){
 				clientThread next = iter.next();
+				if (next == null) {
+					System.err.println("Next is null.");
+				}
 				if (next != this){
-					next.outToClient.writeBytes(userName + ": " + message);
+					next.outToClient.writeBytes(userName + ": " + message + "\n");
+//					System.err.println("Wrote to client: " + next.userName);
 				}
 			}
 		} catch (Exception e) {
@@ -84,7 +90,7 @@ class clientThread extends Thread {
 		try {
 			outToClient.writeBytes("Welcome to the multithreaded chat room.\n");
 			userName = inFromUser.readLine();
-			System.out.println(userName + " has connected.");
+//			System.err.println(userName + " has connected.");
 			writeToClients(" has connected");
 			while (stillChatting) {
 				fromClient = inFromUser.readLine();
@@ -93,12 +99,12 @@ class clientThread extends Thread {
 						stillChatting = false;
 						// Notify the other clients of disconnection.
 						writeToClients(" has disconnected.");
-						System.out.println(userName + " has disconnected.");
+//						System.err.println(userName + " has disconnected.");
 						clientList.remove(this);
-						System.out.println(clientList.size());
+//						System.err.println("Number of clients: " + clientList.size());
 					} else {
 						writeToClients(fromClient);								
-						System.out.println( userName + ": " + fromClient);
+//						System.err.println( userName + ": " + fromClient);
 					}
 				}
 			}
