@@ -51,13 +51,13 @@ class clientThread extends Thread {
 	public clientThread (Socket clientSocket, LinkedList<clientThread> clientList){
 		this.clientSocket = clientSocket;
 		this.clientList = clientList;
+		outToClient = new DataOutputStream(clientSocket.getOutputStream());
+		inFromUser = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 	}
 
 	public synchronized void run() {
 		String fromClient;
 		try {
-			inFromUser = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			outToClient = new DataOutputStream(clientSocket.getOutputStream());
 			outToClient.writeBytes("Welcome to the multithreaded chat room.\n");
 			userName = inFromUser.readLine();
 			System.out.println(userName + " has connected.");
