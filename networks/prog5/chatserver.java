@@ -61,9 +61,9 @@ class clientThread extends Thread {
 			outToClient.writeBytes("Welcome to the multithreaded chat room.\n");
 			userName = inFromUser.readLine();
 			System.out.println(userName + " has connected.");
-			Iterator i = clientList.iterator();
-			while (i.hasNext()){
-				i.next().outToClient.writeBytes(userName + " has connected.\n");
+			Iterator<clientThread> iter = clientList.iterator();
+			while (iter.hasNext()){
+				iter.next().outToClient.writeBytes(userName + " has connected.\n");
 			}
 			while (stillChatting) {
 				fromClient = inFromUser.readLine();
@@ -71,18 +71,20 @@ class clientThread extends Thread {
 					if (fromClient.endsWith("EOF")){
 						stillChatting = false;
 						// Notify the other clients and delist this one.
-						while (i.hasNext()){
-							if (i.next() != this){
-								i.next().outToClient.writeBytes(userName + " has disconnected.\n");
+						iter = clientList.iterator();
+						while (iter.hasNext()){
+							if (iter.next() != this){
+								iter.next().outToClient.writeBytes(userName + " has disconnected.\n");
 								System.out.println(userName + " has disconnected.");
 							} else {
-								clientList.remove(i.next());
+								clientList.remove(iter.next());
 							}
 						}
 					} else {
-						while (i.hasNext()){
-							if (i.next() != this){
-								i.next().outToClient.writeBytes(userName + ": " + fromClient +  "\n");
+						iter = clientList.iterator();
+						while (iter.hasNext()){
+							if (iter.next() != this){
+								iter.next().outToClient.writeBytes(userName + ": " + fromClient +  "\n");
 								System.out.println( userName + ": " + fromClient);
 							}
 						}
